@@ -12,6 +12,8 @@ style.use("ggplot")
 
 
 class Tetris:
+    robot_position = None
+
     piece_colors = [
         (0, 0, 0),
         (255, 255, 0),
@@ -235,17 +237,35 @@ class Tetris:
             img = [self.piece_colors[p] for row in self.get_current_board_state() for p in row]
         else:
             img = [self.piece_colors[p] for row in self.board for p in row]
+        
+        # Create the grid
         img = np.array(img).reshape((self.height, self.width, 3)).astype(np.uint8)
-        img = img[..., ::-1]
-        img = Image.fromarray(img, "RGB")
 
+        if self.robot_position is None:
+            self.robot_position = (1, 1)
+        else:
+            self.robot_position = ((self.robot_position[0]+1) % 10, (self.robot_position[1]+1)%10)
+
+        # Add the moving object
+        obj_x, obj_y = self.robot_position  # self.robot_position should be a tuple (x, y)
+        object_color = (255, 0, 0)  # Red color for the object
+        img[obj_y, obj_x] = object_color
+
+        # Resize and add grid lines
+        img = Image.fromarray(img, "RGB")
         img = img.resize((self.width * self.block_size, self.height * self.block_size), 0)
         img = np.array(img)
-        img[[i * self.block_size for i in range(self.height)], :, :] = 0
-        img[:, [i * self.block_size for i in range(self.width)], :] = 0
 
+        # Draw grid lines
+        for i in range(self.height):
+            img[i * self.block_size:(i + 1) * self.block_size, :, :] = \
+                img[i * self.block_size:(i + 1) * self.block_size, :, :] * (i % 2)
+        for j in range(self.width):
+            img[:, j * self.block_size:(j + 1) * self.block_size, :] = \
+                img[:, j * self.block_size:(j + 1) * self.block_size, :] * (j % 2)
+
+        # Draw additional UI
         img = np.concatenate((img, self.extra_board), axis=1)
-
 
         cv2.putText(img, "Score:", (self.width * self.block_size + int(self.block_size / 2), self.block_size),
                     fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
@@ -268,5 +288,5 @@ class Tetris:
         if video:
             video.write(img)
 
-        cv2.imshow("Deep Q-Learning Tetris", img)
+        cv2.imshow("Colored Grid with Moving Object", img)
         cv2.waitKey(1)
