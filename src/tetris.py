@@ -18,7 +18,7 @@ class Tetris:
     n = 256
     grid_heights = np.zeros((n, n))
     grid_explored_tracker = np.zeros((n, n), dtype=bool)
-    position = (0, 0)
+    robot_position = (0, 0)
 
     # These are the possible directions the bot can go
     directions = ((0, 1), (0, -1), (1, 0), (-1, 0))
@@ -33,6 +33,10 @@ class Tetris:
         (254, 151, 32),
         (0, 0, 255)
     ]
+
+    unexplored_color = (0, 0, 0)
+    explored_color = (255, 255, 255)
+    robot_color = (255, 0, 0)
 
     pieces = [
         [[1, 1],
@@ -104,9 +108,9 @@ class Tetris:
 
         self.grid_heights = np.zeros((self.n, self.n))
         self.grid_explored_tracker = np.zeros((self.n, self.n), dtype=bool)
-        self.position = (0, 0)
+        self.robot_position = (0, 0)
 
-        return self.get_state_properties(self.position)
+        return self.get_state_properties(self.robot_position)
 
     def rotate(self, piece):
         num_rows_orig = num_cols_new = len(piece)
@@ -163,7 +167,7 @@ class Tetris:
         states = {}
 
         for direction in self.directions:
-            possible_next_position = (self.position[0] + direction[0], self.position[1] + direction[1])
+            possible_next_position = (self.robot_position[0] + direction[0], self.robot_position[1] + direction[1])
             if (self.is_on(possible_next_position, self.n)):
                 # Set the key to action and the value to a representation of the state
                 states[direction] = self.get_state_properties(possible_next_position)
@@ -294,10 +298,10 @@ class Tetris:
         direction = action
 
         # Get the next position
-        self.position = (self.position[0] + direction[0], self.position[1] + direction[1])
+        self.robot_position = (self.robot_position[0] + direction[0], self.robot_position[1] + direction[1])
 
         # Get the next grid explored tracker
-        self.grid_explored_tracker = self.get_updated_grid_explorer_tracker(self.grid_explored_tracker, self.position)
+        self.grid_explored_tracker = self.get_updated_grid_explorer_tracker(self.grid_explored_tracker, self.robot_position)
 
         # Get the next score
         self.score = self.get_grid_explorer_tracker_score(self.grid_explored_tracker)
@@ -326,35 +330,20 @@ class Tetris:
     def render(self, video=None):
         if not self.gameover:
             # img = [self.piece_colors[p] for row in self.get_current_board_state() for p in row]
-            img = [(self.piece_colors[0] if p else self.piece_colors[1]) for row in self.grid_explored_tracker for p in row]
+            img = [(self.explored_color if p else self.unexplored_color) for row in self.grid_explored_tracker for p in row]
         else:
-            img = [self.piece_colors[p] for row in self.board for p in row]
+            img = [self.explored_color for row in self.grid_explored_tracker for p in row]
 
         # Resize the grid type stuff
         img = np.array(img).reshape((self.n, self.n, 3)).astype(np.uint8)
 
-        if self.robot_position is None:
-            self.robot_position = (1, 1)
-        else:
-            self.robot_position = ((self.robot_position[0]+1) % 10, (self.robot_position[1]+1)%10)
-
         # Add the moving object
-        obj_x, obj_y = self.robot_position  # self.robot_position should be a tuple (x, y)
-        object_color = (255, 0, 0)  # Red color for the object
-        img[obj_y, obj_x] = object_color
+        img[self.robot_position] = self.robot_color
 
-        # Resize and add grid lines
+        # Resize the image
         img = Image.fromarray(img, "RGB")
         img = img.resize((self.width * self.block_size, self.height * self.block_size), 0)
         img = np.array(img)
-
-        # Draw grid lines
-        for i in range(self.height):
-            img[i * self.block_size:(i + 1) * self.block_size, :, :] = \
-                img[i * self.block_size:(i + 1) * self.block_size, :, :] * (i % 2)
-        for j in range(self.width):
-            img[:, j * self.block_size:(j + 1) * self.block_size, :] = \
-                img[:, j * self.block_size:(j + 1) * self.block_size, :] * (j % 2)
 
         # Draw additional UI
         img = np.concatenate((img, self.extra_board), axis=1)
@@ -365,20 +354,8 @@ class Tetris:
                     (self.width * self.block_size + int(self.block_size / 2), 2 * self.block_size),
                     fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
 
-        # cv2.putText(img, "Pieces:", (self.width * self.block_size + int(self.block_size / 2), 4 * self.block_size),
-        #             fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
-        # cv2.putText(img, str(self.tetrominoes),
-        #             (self.width * self.block_size + int(self.block_size / 2), 5 * self.block_size),
-        #             fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
-
-        # cv2.putText(img, "Lines:", (self.width * self.block_size + int(self.block_size / 2), 7 * self.block_size),
-        #             fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
-        # cv2.putText(img, str(self.cleared_lines),
-        #             (self.width * self.block_size + int(self.block_size / 2), 8 * self.block_size),
-        #             fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
-
         if video:
             video.write(img)
 
-        cv2.imshow("Colored Grid with Moving Object", img)
+        cv2.imshow("Exploration For Robot", img)
         cv2.waitKey(1)
