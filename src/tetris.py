@@ -330,8 +330,8 @@ class Tetris:
         else:
             img = [self.piece_colors[p] for row in self.board for p in row]
 
-        # Create the grid
-        img = np.array(img).reshape((self.height, self.width, 3)).astype(np.uint8)
+        # Resize the grid type stuff
+        img = np.array(img).reshape((self.n, self.n, 3)).astype(np.uint8)
 
         if self.robot_position is None:
             self.robot_position = (1, 1)
