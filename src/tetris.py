@@ -92,7 +92,7 @@ class Tetris:
 
     def reset(self):
         # self.board = [[0] * self.width for _ in range(self.height)]
-        # self.score = 0
+        self.score = 0
         # self.tetrominoes = 0
         # self.cleared_lines = 0
         # self.bag = list(range(len(self.pieces)))
@@ -300,12 +300,12 @@ class Tetris:
         self.grid = self.get_updated_grid_explorer_tracker(self.grid, self.position)
 
         # Get the next score
-        score = self.get_grid_explorer_tracker_score(self.grid)
+        self.score = self.get_grid_explorer_tracker_score(self.grid)
 
         # Get if the game is over
         self.gameover = self.is_gameover(self.grid)
 
-        return score, self.gameover
+        return self.score, self.gameover
     
     def is_gameover(self, grid) -> bool:
         """Return True if all the grid has been explored, False otherwise
