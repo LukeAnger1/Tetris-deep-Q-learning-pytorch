@@ -23,42 +23,9 @@ class Tetris:
     # These are the possible directions the bot can go
     directions = ((0, 1), (0, -1), (1, 0), (-1, 0))
 
-    piece_colors = [
-        (0, 0, 0),
-        (255, 255, 0),
-        (147, 88, 254),
-        (54, 175, 144),
-        (255, 0, 0),
-        (102, 217, 238),
-        (254, 151, 32),
-        (0, 0, 255)
-    ]
-
     unexplored_color = (0, 0, 0)
     explored_color = (255, 255, 255)
     robot_color = (255, 0, 0)
-
-    pieces = [
-        [[1, 1],
-         [1, 1]],
-
-        [[0, 2, 0],
-         [2, 2, 2]],
-
-        [[0, 3, 3],
-         [3, 3, 0]],
-
-        [[4, 4, 0],
-         [0, 4, 4]],
-
-        [[5, 5, 5, 5]],
-
-        [[0, 0, 6],
-         [6, 6, 6]],
-
-        [[7, 0, 0],
-         [7, 7, 7]]
-    ]
 
     def __init__(self, height=20, width=10, block_size=20):
         self.height = height
@@ -137,27 +104,6 @@ class Tetris:
         # TODO: Somewhere, maybe not here, add a constraint that the bot should always try to move
 
         return torch.FloatTensor([possible_next_position[0], possible_next_position[1], next_score])
-
-    def get_holes(self, board):
-        num_holes = 0
-        for col in zip(*board):
-            row = 0
-            while row < self.height and col[row] == 0:
-                row += 1
-            num_holes += len([x for x in col[row + 1:] if x == 0])
-        return num_holes
-
-    def get_bumpiness_and_height(self, board):
-        board = np.array(board)
-        mask = board != 0
-        invert_heights = np.where(mask.any(axis=0), np.argmax(mask, axis=0), self.height)
-        heights = self.height - invert_heights
-        total_height = np.sum(heights)
-        currs = heights[:-1]
-        nexts = heights[1:]
-        diffs = np.abs(currs - nexts)
-        total_bumpiness = np.sum(diffs)
-        return total_bumpiness, total_height
     
     # Checks if this position would fall on an n by n square
     def is_on(self, position, n):
@@ -193,76 +139,6 @@ class Tetris:
         #         states[(x, i)] = self.get_state_properties(board)
         #     curr_piece = self.rotate(curr_piece)
         return states
-
-    def get_current_board_state(self):
-        board = [x[:] for x in self.board]
-        for y in range(len(self.piece)):
-            for x in range(len(self.piece[y])):
-                board[y + self.current_pos["y"]][x + self.current_pos["x"]] = self.piece[y][x]
-        return board
-
-    def new_piece(self):
-        if not len(self.bag):
-            self.bag = list(range(len(self.pieces)))
-            random.shuffle(self.bag)
-        self.ind = self.bag.pop()
-        self.piece = [row[:] for row in self.pieces[self.ind]]
-        self.current_pos = {"x": self.width // 2 - len(self.piece[0]) // 2,
-                            "y": 0
-                            }
-        if self.check_collision(self.piece, self.current_pos):
-            self.gameover = True
-
-    def check_collision(self, piece, pos):
-        future_y = pos["y"] + 1
-        for y in range(len(piece)):
-            for x in range(len(piece[y])):
-                if future_y + y > self.height - 1 or self.board[future_y + y][pos["x"] + x] and piece[y][x]:
-                    return True
-        return False
-
-    def truncate(self, piece, pos):
-        gameover = False
-        last_collision_row = -1
-        for y in range(len(piece)):
-            for x in range(len(piece[y])):
-                if self.board[pos["y"] + y][pos["x"] + x] and piece[y][x]:
-                    if y > last_collision_row:
-                        last_collision_row = y
-
-        if pos["y"] - (len(piece) - last_collision_row) < 0 and last_collision_row > -1:
-            while last_collision_row >= 0 and len(piece) > 1:
-                gameover = True
-                last_collision_row = -1
-                del piece[0]
-                for y in range(len(piece)):
-                    for x in range(len(piece[y])):
-                        if self.board[pos["y"] + y][pos["x"] + x] and piece[y][x] and y > last_collision_row:
-                            last_collision_row = y
-        return gameover
-
-    def store(self, piece, pos):
-        board = [x[:] for x in self.board]
-        for y in range(len(piece)):
-            for x in range(len(piece[y])):
-                if piece[y][x] and not board[y + pos["y"]][x + pos["x"]]:
-                    board[y + pos["y"]][x + pos["x"]] = piece[y][x]
-        return board
-
-    def check_cleared_rows(self, board):
-        to_delete = []
-        for i, row in enumerate(board[::-1]):
-            if 0 not in row:
-                to_delete.append(len(board) - 1 - i)
-        if len(to_delete) > 0:
-            board = self.remove_row(board, to_delete)
-        return len(to_delete), board
-
-    def remove_row(self, board, indices):
-        for i in indices[::-1]:
-            del board[i]
-            board = [[0 for _ in range(self.width)]] + board
-        return board
 
     def step(self, action, render=True, video=None):
         # x, num_rotations = action
