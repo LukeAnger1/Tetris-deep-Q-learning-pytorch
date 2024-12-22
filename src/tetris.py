@@ -297,13 +297,13 @@ class Tetris:
         self.position = (self.position[0] + direction[0], self.position[1] + direction[1])
 
         # Get the next grid explored tracker
-        self.grid = self.get_updated_grid_explorer_tracker(self.grid, self.position)
+        self.grid_explored_tracker = self.get_updated_grid_explorer_tracker(self.grid_explored_tracker, self.position)
 
         # Get the next score
-        self.score = self.get_grid_explorer_tracker_score(self.grid)
+        self.score = self.get_grid_explorer_tracker_score(self.grid_explored_tracker)
 
         # Get if the game is over
-        self.gameover = self.is_gameover(self.grid)
+        self.gameover = self.is_gameover(self.grid_explored_tracker)
 
         return self.score, self.gameover
     
