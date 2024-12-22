@@ -7,7 +7,8 @@ class DeepQNetwork(nn.Module):
     def __init__(self):
         super(DeepQNetwork, self).__init__()
 
-        self.conv1 = nn.Sequential(nn.Linear(4, 64), nn.ReLU(inplace=True))
+        # NOTE: The first number in the layer has to be the length of get_state_properties
+        self.conv1 = nn.Sequential(nn.Linear(3, 64), nn.ReLU(inplace=True))
         self.conv2 = nn.Sequential(nn.Linear(64, 64), nn.ReLU(inplace=True))
         self.conv3 = nn.Sequential(nn.Linear(64, 1))
 
